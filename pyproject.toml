@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "sync-async"
+version = "0.1.0"
+description = "Interface for easy access to asynchrneous methods for synchroneous users"
+authors = ["Tobias Duewell <dev@duewell.ch>"]
+readme = "README.md"
+license = "MIT"
+keywords = ["asynchrneous", "api", "IPython", "accessibility"]
+
+packages = [{include = "SyncAsync"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+
+[tool.poetry.group.test.dependencies]
+pytest = "^7.4.2"
+pytest-asyncio = "^0.21.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
