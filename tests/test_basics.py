@@ -41,6 +41,14 @@ class TestClass(SyncAsync):
     async def aio_raise_exception(self):
         raise KeyError("key error")
 
+    @SyncAsync.sync
+    async def aio_raise_keyboard_interrupt(self):
+        raise KeyboardInterrupt()
+
+    @SyncAsync.sync
+    async def aio_raise_system_exit(self):
+        raise SystemExit(1)
+
     def child(self):
         return ChildClass(parent=self)
 
@@ -121,3 +129,13 @@ def test_child(simple_class: TestClass):
     child = simple_class.child()
     assert child.child_a() == 0
     assert simple_class.a() == 0
+
+
+def test_keyboard_interrupt_propagates(simple_class: TestClass):
+    with pytest.raises(KeyboardInterrupt):
+        simple_class.aio_raise_keyboard_interrupt()
+
+
+def test_system_exit_propagates(simple_class: TestClass):
+    with pytest.raises(SystemExit):
+        simple_class.aio_raise_system_exit()

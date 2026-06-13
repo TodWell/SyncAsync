@@ -93,14 +93,12 @@ class SyncAsync(abc.ABC):
                 # Async function to be executed
                 try:
                     foo_result = await foo(_self, *args, **kwargs)
-                except Exception as ex:
-                    # If an exception occurs
+                except BaseException as ex:
                     res[:] = ex, False
                 else:
-                    # If the function was successful
                     res[:] = foo_result, True
-                # Terminate the event loop
-                _self.loop.stop()
+                finally:
+                    _self.loop.stop()
 
             # Start eventloop, has to be stopped within _runnable()
             _self.loop.call_soon(lambda: asyncio.ensure_future(_runnable()))
