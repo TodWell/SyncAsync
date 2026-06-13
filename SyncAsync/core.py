@@ -2,7 +2,7 @@ import abc
 import asyncio
 import functools
 import logging
-from typing import Callable, Awaitable, ParamSpec, TypeVar, Concatenate, Union, List
+from typing import Callable, Awaitable, ParamSpec, TypeVar, Concatenate, Union
 
 """
 See: https://docs.python.org/3/library/functools.html
@@ -54,7 +54,6 @@ Param = ParamSpec("Param")
 RetType = TypeVar("RetType")
 
 OriginalFunction = Callable[Param, RetType]
-DecoratedFunc = Callable[Concatenate[str, Param], RetType]
 
 
 class SyncAsync(abc.ABC):
