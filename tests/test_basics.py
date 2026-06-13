@@ -183,6 +183,32 @@ def test_subprocess_works_after_import():
     assert result == b"ok"
 
 
+def test_sync_decorator_preserves_name():
+    """@SyncAsync.sync must copy __name__ from the wrapped async method."""
+    assert TestClass.a.__name__ == "a"
+
+
+def test_sync_decorator_preserves_qualname():
+    assert TestClass.aio_hinting.__qualname__ == "TestClass.aio_hinting"
+
+
+def test_sync_decorator_preserves_doc():
+    class Documented(SyncAsync):
+        @SyncAsync.sync
+        async def method(self):
+            """my docstring"""
+
+    assert Documented.method.__doc__ == "my docstring"
+
+
+def test_sync_decorator_preserves_signature():
+    import inspect
+    sig = inspect.signature(TestClass.aio_hinting)
+    params = list(sig.parameters)
+    assert "x" in params
+    assert "y" in params
+
+
 def test_is_notebook_returns_false_without_ipython():
     from unittest.mock import patch
     from SyncAsync.core import is_notebook

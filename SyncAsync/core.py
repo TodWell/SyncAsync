@@ -1,6 +1,6 @@
 import abc
 import asyncio
-
+import functools
 import logging
 from typing import Callable, Awaitable, ParamSpec, TypeVar, Concatenate, Union, List
 
@@ -71,14 +71,8 @@ class SyncAsync(abc.ABC):
         :return:
         """
 
+        @functools.wraps(foo)
         def _sync_async_decorator(_self, *args, **kwargs) -> RetType:
-            """
-            Decorated function
-            :param _self:
-            :param args:
-            :param kwargs:
-            :return:
-            """
             try:
                 asyncio.get_running_loop()
                 ambient_loop_running = True
