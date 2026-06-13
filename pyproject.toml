@@ -1,6 +1,6 @@
 [project]
 name = "sync-async"
-version = "0.1.0"
+version = "1.0.0"
 description = "Interface for easy access to asynchronous methods for synchronous users"
 authors = [{ name = "Tobias Duewell", email = "dev@duewell.ch" }]
 readme = "README.md"
