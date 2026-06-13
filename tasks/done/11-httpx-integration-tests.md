@@ -43,3 +43,17 @@ and `await`, making it a good stand-in for any async resource a user would wrap 
 - Session-scoped `AsyncClient` lifetime should be managed inside the `@SyncAsync.sync`
   method (open and close per call, or store on `self`) — pick whichever matches realistic
   usage and document the choice.
+
+## Implementation notes
+
+- Used `httpx.MockTransport(handler)` where `handler` is a plain function
+  `(httpx.Request) -> httpx.Response` — no external mock library needed.
+- Chose **open/close per call** (`async with httpx.AsyncClient(...) as client`) rather
+  than storing the client on `self`. This avoids lifecycle complexity (e.g. closing an
+  already-closed client) and matches the most common real-world usage pattern.
+- `httpx` does **not** raise on non-2xx by default; `response.raise_for_status()` is
+  explicit. Tested both transport-level errors (`ConnectError`) and status-level errors.
+- The six scenarios all passed without any changes to `core.py`, confirming the existing
+  `@SyncAsync.sync` implementation handles real async I/O correctly.
+- `child._loop is None` while `child.loop is parent.loop` — the parent-chaining invariant
+  holds with async I/O just as with pure-Python coroutines.
