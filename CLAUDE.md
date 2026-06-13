@@ -4,22 +4,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-`SyncAsync` is a small Python library that lets async methods on a class be called synchronously — without the caller needing to know they're async. It is managed with [Poetry](https://python-poetry.org/) and targets Python 3.11+.
+`SyncAsync` is a small Python library that lets async methods on a class be called synchronously — without the caller needing to know they're async. It is managed with [uv](https://docs.astral.sh/uv/) and targets Python 3.11–3.14.
 
 ## Commands
 
 ```bash
-# Install dependencies (including test group)
-poetry install
+# Install dependencies (including test extras)
+uv sync --extra test
 
 # Run all tests
-poetry run pytest
+uv run --extra test pytest
 
 # Run a single test
-poetry run pytest tests/test_basics.py::test_asynchronous_method
+uv run --extra test pytest tests/test_basics.py::test_asynchronous_method
+
+# Run tests across all supported Python versions (requires py3.11–py3.14 on PATH)
+tox
 
 # Run the demo
-poetry run python demos/example_api.py
+uv run python demos/example_api.py
 ```
 
 ## Architecture
