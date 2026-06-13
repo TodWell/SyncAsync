@@ -47,7 +47,11 @@ if is_spyder() or is_notebook():
     nest_asyncio.apply()
 
 # Event Loop Setup ---------------------------------------------------
-if os.name == "nt":  # Windows policies
+# WindowsSelectorEventLoopPolicy is only needed in Spyder, where ProactorEventLoop
+# causes issues (https://github.com/spyder-ide/spyder/issues/7096).
+# Applying it globally breaks asyncio.create_subprocess_exec/shell on Windows,
+# since SelectorEventLoop does not support subprocess creation.
+if is_spyder() and os.name == "nt":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 # ----------------------------------------------------------------------

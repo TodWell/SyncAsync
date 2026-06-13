@@ -1,3 +1,6 @@
+import asyncio
+import sys
+
 import pytest
 
 from SyncAsync import SyncAsync
@@ -152,3 +155,30 @@ def test_sync_in_thread():
     with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
         future = pool.submit(thread_task)
         assert future.result() == 0
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows-only policy check")
+def test_windows_selector_policy_not_forced_globally():
+    """Importing SyncAsync must not force WindowsSelectorEventLoopPolicy on non-Spyder Windows."""
+    import os
+    if "SPY_PYTHONPATH" not in os.environ:
+        policy = asyncio.get_event_loop_policy()
+        assert not isinstance(policy, asyncio.WindowsSelectorEventLoopPolicy)
+
+
+class SubprocessClass(SyncAsync):
+    @SyncAsync.sync
+    async def echo(self):
+        proc = await asyncio.create_subprocess_exec(
+            sys.executable, "-c", "print('ok')",
+            stdout=asyncio.subprocess.PIPE,
+        )
+        stdout, _ = await proc.communicate()
+        return stdout.strip()
+
+
+def test_subprocess_works_after_import():
+    """asyncio.create_subprocess_exec must not raise NotImplementedError after importing SyncAsync."""
+    obj = SubprocessClass()
+    result = obj.echo()
+    assert result == b"ok"
