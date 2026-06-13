@@ -97,13 +97,12 @@ async def test_aio_simple(simple_class: TestClass):
 
 
 @pytest.mark.asyncio
-async def test_should_fail(simple_class: TestClass):
-    try:
-        d = simple_class.d()
-    except Exception as ex:
-        assert True
-    else:
-        assert False
+async def test_sync_method_inside_async_returns_coroutine(simple_class: TestClass):
+    """When the event loop is already running, @SyncAsync.sync returns the raw coroutine."""
+    import inspect
+    result = simple_class.a()  # loop is running — returns coroutine, not 0
+    assert inspect.iscoroutine(result)
+    await result  # consume to avoid RuntimeWarning
 
 
 def test_hinting(simple_class: TestClass):
