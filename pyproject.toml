@@ -6,8 +6,23 @@ authors = [{ name = "Tobias Duewell", email = "dev@duewell.ch" }]
 readme = "README.md"
 license = { text = "MIT" }
 keywords = ["asynchronous", "api", "IPython", "accessibility"]
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Operating System :: OS Independent",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
 requires-python = ">=3.11"
 dependencies = ["nest-asyncio>=1.5"]
+
+[project.urls]
+Homepage = "https://github.com/TodWell/SyncAsync"
+Repository = "https://github.com/TodWell/SyncAsync"
+Issues = "https://github.com/TodWell/SyncAsync/issues"
 
 [project.optional-dependencies]
 test = [
