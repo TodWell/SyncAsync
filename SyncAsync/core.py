@@ -25,12 +25,12 @@ def is_notebook():
     """
     try:
         from IPython import get_ipython
-    except:
+    except ImportError:
         return False
     try:
         if "IPKernelApp" not in get_ipython().config:  # pragma: no cover
             raise ImportError("console")
-    except:
+    except Exception:
         return False
     else:  # pragma: no cover
         return True

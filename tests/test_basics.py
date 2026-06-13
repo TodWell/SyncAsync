@@ -181,3 +181,23 @@ def test_subprocess_works_after_import():
     obj = SubprocessClass()
     result = obj.echo()
     assert result == b"ok"
+
+
+def test_is_notebook_returns_false_without_ipython():
+    from unittest.mock import patch
+    from SyncAsync.core import is_notebook
+    with patch.dict("sys.modules", {"IPython": None}):
+        assert is_notebook() is False
+
+
+def test_is_notebook_does_not_swallow_keyboard_interrupt():
+    """is_notebook() must let KeyboardInterrupt propagate (bare except: used to swallow it)."""
+    from unittest.mock import patch, MagicMock
+    from SyncAsync.core import is_notebook
+
+    mock_ipython = MagicMock()
+    mock_ipython.get_ipython.side_effect = KeyboardInterrupt
+
+    with patch.dict("sys.modules", {"IPython": mock_ipython}):
+        with pytest.raises(KeyboardInterrupt):
+            is_notebook()
