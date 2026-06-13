@@ -55,10 +55,10 @@ class TestClass(SyncAsync):
     def child(self):
         return ChildClass(parent=self)
 
-    async def recursive(self, depth=0, max_depth = 100):
-        if depth <= max_depth:
+    async def recursive(self, depth=0, max_depth=5):
+        if depth >= max_depth:
             return
-        await self.recursive(depth - 1, max_depth)
+        await self.recursive(depth + 1, max_depth)
 
 
 @pytest.fixture
@@ -81,9 +81,9 @@ def test_asynchronous_method_calling_asynchronous(simple_class: TestClass):
 def test_asynchronous_method_calling_synchronous(simple_class: TestClass):
     assert simple_class.d() == 0
 
-def test_asynchronous_recursive(simple_class: TestClass):
-    simple_class.recursive()
-    assert True
+@pytest.mark.asyncio
+async def test_asynchronous_recursive(simple_class: TestClass):
+    await simple_class.recursive()
 
 
 @pytest.mark.asyncio
