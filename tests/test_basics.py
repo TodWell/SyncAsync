@@ -190,6 +190,61 @@ def test_is_notebook_returns_false_without_ipython():
         assert is_notebook() is False
 
 
+def test_nest_asyncio_applied_per_loop_in_spyder(monkeypatch):
+    """In a simulated Spyder env, nest_asyncio.apply() must receive the instance loop, not None."""
+    import sys
+    import SyncAsync.core as core
+    from unittest.mock import MagicMock
+
+    applied_with = []
+    mock_nest = MagicMock()
+    mock_nest.apply.side_effect = lambda loop=None: applied_with.append(loop)
+
+    monkeypatch.setattr(core, "is_spyder", lambda: True)
+    monkeypatch.setattr(core, "is_notebook", lambda: False)
+    monkeypatch.setitem(sys.modules, "nest_asyncio", mock_nest)
+    obj = TestClass()
+    loop = obj.loop
+    assert len(applied_with) == 1
+    assert applied_with[0] is loop
+
+
+def test_nest_asyncio_not_applied_in_normal_env(monkeypatch):
+    """In a normal (non-Spyder, non-Jupyter) env, nest_asyncio.apply() must not be called."""
+    import sys
+    import SyncAsync.core as core
+    from unittest.mock import MagicMock
+
+    mock_nest = MagicMock()
+
+    monkeypatch.setattr(core, "is_spyder", lambda: False)
+    monkeypatch.setattr(core, "is_notebook", lambda: False)
+    monkeypatch.setitem(sys.modules, "nest_asyncio", mock_nest)
+    obj = TestClass()
+    _ = obj.loop
+    mock_nest.apply.assert_not_called()
+
+
+def test_nest_asyncio_applied_only_once_per_loop(monkeypatch):
+    """Accessing .loop multiple times must only apply nest_asyncio once."""
+    import sys
+    import SyncAsync.core as core
+    from unittest.mock import MagicMock
+
+    call_count = [0]
+    mock_nest = MagicMock()
+    mock_nest.apply.side_effect = lambda loop=None: call_count.__setitem__(0, call_count[0] + 1)
+
+    monkeypatch.setattr(core, "is_spyder", lambda: True)
+    monkeypatch.setattr(core, "is_notebook", lambda: False)
+    monkeypatch.setitem(sys.modules, "nest_asyncio", mock_nest)
+    obj = TestClass()
+    _ = obj.loop
+    _ = obj.loop
+    _ = obj.loop
+    assert call_count[0] == 1
+
+
 def test_is_notebook_does_not_swallow_keyboard_interrupt():
     """is_notebook() must let KeyboardInterrupt propagate (bare except: used to swallow it)."""
     from unittest.mock import patch, MagicMock

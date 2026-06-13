@@ -40,12 +40,6 @@ def is_spyder():
     return 'SPY_PYTHONPATH' in os.environ
 
 
-if is_spyder() or is_notebook():
-    logging.warning("nest_asyncio for Spyder or Jupyter environment activated")
-    import nest_asyncio
-
-    nest_asyncio.apply()
-
 # Event Loop Setup ---------------------------------------------------
 # WindowsSelectorEventLoopPolicy is only needed in Spyder, where ProactorEventLoop
 # causes issues (https://github.com/spyder-ide/spyder/issues/7096).
@@ -131,4 +125,10 @@ class SyncAsync(abc.ABC):
             return self._parent.loop
         if self._loop is None:  # If there is no event loop, create one
             self._loop = asyncio.new_event_loop()
+            if is_spyder() or is_notebook():
+                # Patch only this loop, not the global running loop, so other
+                # libraries in the same kernel aren't affected.
+                logging.warning("nest_asyncio for Spyder or Jupyter environment activated")
+                import nest_asyncio
+                nest_asyncio.apply(self._loop)
         return self._loop
