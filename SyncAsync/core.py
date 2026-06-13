@@ -1,8 +1,8 @@
 import abc
 import asyncio
-
+import functools
 import logging
-from typing import Callable, Awaitable, ParamSpec, TypeVar, Concatenate, Union, List
+from typing import Any, Callable, Awaitable, ParamSpec, TypeVar, Concatenate, Union
 
 """
 See: https://docs.python.org/3/library/functools.html
@@ -25,12 +25,12 @@ def is_notebook():
     """
     try:
         from IPython import get_ipython
-    except:
+    except ImportError:
         return False
     try:
         if "IPKernelApp" not in get_ipython().config:  # pragma: no cover
             raise ImportError("console")
-    except:
+    except Exception:
         return False
     else:  # pragma: no cover
         return True
@@ -40,23 +40,18 @@ def is_spyder():
     return 'SPY_PYTHONPATH' in os.environ
 
 
-if is_spyder() or is_notebook():
-    logging.warning("nest_asyncio for Spyder or Jupyter environment activated")
-    import nest_asyncio
-
-    nest_asyncio.apply()
-
 # Event Loop Setup ---------------------------------------------------
-if os.name == "nt":  # Windows policies
+# WindowsSelectorEventLoopPolicy is only needed in Spyder, where ProactorEventLoop
+# causes issues (https://github.com/spyder-ide/spyder/issues/7096).
+# Applying it globally breaks asyncio.create_subprocess_exec/shell on Windows,
+# since SelectorEventLoop does not support subprocess creation.
+if is_spyder() and os.name == "nt":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 # ----------------------------------------------------------------------
 
-Param = ParamSpec("Param")
-RetType = TypeVar("RetType")
-
-OriginalFunction = Callable[Param, RetType]
-DecoratedFunc = Callable[Concatenate[str, Param], RetType]
+P = ParamSpec("P")
+T = TypeVar("T")
 
 
 class SyncAsync(abc.ABC):
@@ -66,22 +61,24 @@ class SyncAsync(abc.ABC):
         self._parent = parent
 
     @staticmethod
-    def sync(foo: OriginalFunction) -> Union[RetType, Callable[[ParamSpec], Awaitable[RetType]]]:
+    def sync(
+        foo: Callable[Concatenate[Any, P], Awaitable[T]]
+    ) -> Callable[Concatenate[Any, P], Union[T, Awaitable[T]]]:
         """
         Convert an async method into a synchronous one
         :param foo:
         :return:
         """
 
-        def _sync_async_decorator(_self, *args, **kwargs) -> RetType:
-            """
-            Decorated function
-            :param _self:
-            :param args:
-            :param kwargs:
-            :return:
-            """
-            if _self.loop.is_running():
+        @functools.wraps(foo)
+        def _sync_async_decorator(_self, *args, **kwargs) -> Union[T, Awaitable[T]]:
+            try:
+                asyncio.get_running_loop()
+                ambient_loop_running = True
+            except RuntimeError:
+                ambient_loop_running = False
+
+            if ambient_loop_running:
                 # If the even loop is already running, execute foo directly
                 return foo(_self, *args, **kwargs)
 
@@ -93,14 +90,12 @@ class SyncAsync(abc.ABC):
                 # Async function to be executed
                 try:
                     foo_result = await foo(_self, *args, **kwargs)
-                except Exception as ex:
-                    # If an exception occurs
+                except BaseException as ex:
                     res[:] = ex, False
                 else:
-                    # If the function was successful
                     res[:] = foo_result, True
-                # Terminate the event loop
-                _self.loop.stop()
+                finally:
+                    _self.loop.stop()
 
             # Start eventloop, has to be stopped within _runnable()
             _self.loop.call_soon(lambda: asyncio.ensure_future(_runnable()))
@@ -122,5 +117,11 @@ class SyncAsync(abc.ABC):
         if self._parent:  # Get event loop from parent, if one exists
             return self._parent.loop
         if self._loop is None:  # If there is no event loop, create one
-            self._loop = asyncio.get_event_loop()
+            self._loop = asyncio.new_event_loop()
+            if is_spyder() or is_notebook():
+                # Patch only this loop, not the global running loop, so other
+                # libraries in the same kernel aren't affected.
+                logging.warning("nest_asyncio for Spyder or Jupyter environment activated")
+                import nest_asyncio
+                nest_asyncio.apply(self._loop)
         return self._loop
