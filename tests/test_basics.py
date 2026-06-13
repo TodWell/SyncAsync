@@ -37,7 +37,7 @@ class TestClass(SyncAsync):
         return x - y
 
     @SyncAsync.sync
-    async def aio_hinting(self, x: int, y=2):
+    async def aio_hinting(self, x: int, y: int = 2) -> int:
         return x - y
 
     @SyncAsync.sync
@@ -282,3 +282,21 @@ def test_is_notebook_does_not_swallow_keyboard_interrupt():
     with patch.dict("sys.modules", {"IPython": mock_ipython}):
         with pytest.raises(KeyboardInterrupt):
             is_notebook()
+
+
+def test_type_hints_preserved_in_annotations():
+    """@SyncAsync.sync must preserve the original function's type annotations via functools.wraps."""
+    import typing
+    hints = typing.get_type_hints(TestClass.aio_hinting)
+    assert hints.get("x") is int
+    assert hints.get("y") is int
+    assert hints.get("return") is int
+
+
+def test_sync_decorator_preserves_return_annotation():
+    """inspect.signature must follow __wrapped__ and expose the original return annotation."""
+    import inspect
+    sig = inspect.signature(TestClass.aio_hinting)
+    assert sig.return_annotation is int
+    assert sig.parameters["x"].annotation is int
+    assert sig.parameters["y"].annotation is int

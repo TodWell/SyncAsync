@@ -2,7 +2,7 @@ import abc
 import asyncio
 import functools
 import logging
-from typing import Callable, Awaitable, ParamSpec, TypeVar, Concatenate, Union
+from typing import Any, Callable, Awaitable, ParamSpec, TypeVar, Concatenate, Union
 
 """
 See: https://docs.python.org/3/library/functools.html
@@ -50,10 +50,8 @@ if is_spyder() and os.name == "nt":
 
 # ----------------------------------------------------------------------
 
-Param = ParamSpec("Param")
-RetType = TypeVar("RetType")
-
-OriginalFunction = Callable[Param, RetType]
+P = ParamSpec("P")
+T = TypeVar("T")
 
 
 class SyncAsync(abc.ABC):
@@ -63,7 +61,9 @@ class SyncAsync(abc.ABC):
         self._parent = parent
 
     @staticmethod
-    def sync(foo: OriginalFunction) -> Union[RetType, Callable[[ParamSpec], Awaitable[RetType]]]:
+    def sync(
+        foo: Callable[Concatenate[Any, P], Awaitable[T]]
+    ) -> Callable[Concatenate[Any, P], Union[T, Awaitable[T]]]:
         """
         Convert an async method into a synchronous one
         :param foo:
@@ -71,7 +71,7 @@ class SyncAsync(abc.ABC):
         """
 
         @functools.wraps(foo)
-        def _sync_async_decorator(_self, *args, **kwargs) -> RetType:
+        def _sync_async_decorator(_self, *args, **kwargs) -> Union[T, Awaitable[T]]:
             try:
                 asyncio.get_running_loop()
                 ambient_loop_running = True
