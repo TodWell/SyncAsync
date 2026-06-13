@@ -139,3 +139,16 @@ def test_keyboard_interrupt_propagates(simple_class: TestClass):
 def test_system_exit_propagates(simple_class: TestClass):
     with pytest.raises(SystemExit):
         simple_class.aio_raise_system_exit()
+
+
+def test_sync_in_thread():
+    """SyncAsync must work from a background thread (no ambient event loop)."""
+    import concurrent.futures
+
+    def thread_task():
+        obj = TestClass()
+        return obj.a()
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+        future = pool.submit(thread_task)
+        assert future.result() == 0

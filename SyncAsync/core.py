@@ -81,7 +81,13 @@ class SyncAsync(abc.ABC):
             :param kwargs:
             :return:
             """
-            if _self.loop.is_running():
+            try:
+                asyncio.get_running_loop()
+                ambient_loop_running = True
+            except RuntimeError:
+                ambient_loop_running = False
+
+            if ambient_loop_running:
                 # If the even loop is already running, execute foo directly
                 return foo(_self, *args, **kwargs)
 
@@ -120,5 +126,5 @@ class SyncAsync(abc.ABC):
         if self._parent:  # Get event loop from parent, if one exists
             return self._parent.loop
         if self._loop is None:  # If there is no event loop, create one
-            self._loop = asyncio.get_event_loop()
+            self._loop = asyncio.new_event_loop()
         return self._loop
